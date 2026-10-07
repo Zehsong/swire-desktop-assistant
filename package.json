@@ -1,0 +1,77 @@
+{
+  "name": "swire-desktop-assistant",
+  "version": "0.1.0",
+  "description": "A local-first Windows desktop companion",
+  "main": "dist-electron/electron/main.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "dev": "tsc -p tsconfig.electron.json && concurrently -k \"vite\" \"wait-on http://127.0.0.1:5173 && cross-env SWIRE_DEV=1 electron .\"",
+    "dev:web": "vite",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && vite build && tsc -p tsconfig.electron.json",
+    "start": "electron .",
+    "test": "tsx --test tests/*.test.ts",
+    "test:ui": "playwright test",
+    "dist:win": "npm run build && electron-builder --win nsis --x64 --publish never",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zehsong/swire-desktop-assistant.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Zehsong/swire-desktop-assistant/issues"
+  },
+  "homepage": "https://github.com/Zehsong/swire-desktop-assistant#readme",
+  "private": true,
+  "build": {
+    "appId": "com.swire.companion",
+    "productName": "Swire",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.5",
+    "cross-env": "^10.1.0",
+    "electron": "^44.6.0",
+    "electron-builder": "^26.15.3",
+    "prettier": "^3.9.9",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3",
+    "wait-on": "^9.5.1"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
