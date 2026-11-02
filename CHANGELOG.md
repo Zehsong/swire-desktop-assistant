@@ -1,5 +1,12 @@
 # Changelog
 
+## Packaging migration — 2026-11-02
+
+- Replaced electron-builder's vulnerable minimatch chain with official checksum-verified Electron downloads, a narrow Node staging script and external NSIS 3. Windows x64 installer and uninstall functionality remain available; no audit exclusions or breaking overrides were used.
+- Full npm audit is zero. Fresh npm package install has no deprecation warnings. Runtime installation is explicit; the official proxy option resolved cloud downloads without disabling TLS/checksum verification.
+- Added package-boundary and uninstall-manifest tests. Formatting, types/build, 17 unit/package and 8 browser tests passed; real Windows payload and NSIS installer compiled on Linux. Windows execution remains a separate acceptance step.
+- See [migration report](docs/security/2026-11-02-packaging-migration.md) for runtime versions, installer prerequisites, uninstall-before-upgrade behavior and validation limits.
+
 ## Dependency security repair — 2026-11-02
 
 - Updated Electron within major 44 to 44.10.1, concurrently to 10.0.6 (shell-quote 1.12.0), and Zod to 4.6.7. Applied compatible lockfile patches for undici 6/7, joi, follow-redirects and fast-uri.

@@ -1,0 +1,23 @@
+{
+  "verifiedOn": "2026-11-02",
+  "host": "Linux x64",
+  "target": "Windows x64",
+  "nsisVersion": "3.12",
+  "appVersion": "0.1.0",
+  "electronVersion": "44.10.1",
+  "verifiedLinuxRuntime": {
+    "electron": "44.10.1",
+    "node": "24.22.1",
+    "undici": "7.30.1"
+  },
+  "installerFilename": "Swire-0.1.0-Setup.exe",
+  "installerBytes": 115491829,
+  "installerSha256": "f1b0b19de4472310f5c11a519ec5a235aa55e776f761e9f274f0d3292936cd97",
+  "payloadFileCount": 924,
+  "nsisCompileExitCode": 0,
+  "nsisWarningsAreErrors": true,
+  "windowsInstallerExecuted": false,
+  "unitAndPackageTestsPassed": 17,
+  "browserTestsPassed": 8,
+  "npmAuditVulnerabilities": 0
+}

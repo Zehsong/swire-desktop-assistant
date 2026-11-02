@@ -1,5 +1,7 @@
 # Dependency security review — 2026-11-02
 
+Historical first repair: the residual findings and download failure below were subsequently addressed by the [packaging migration](2026-11-02-packaging-migration.md).
+
 Baseline: `16f33b68dfbe6b90f933f8ff2d6e2995ade5ae6e`. This review ran only in the Linux cloud checkout, using Node 24.19.0 / npm 11.9.0. No user-machine commands, real AI requests, secrets inspection or GitHub push were performed. No checkout-specific AGENTS.md or SKILL.md was found.
 
 ## Audit evidence

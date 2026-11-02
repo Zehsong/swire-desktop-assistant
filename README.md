@@ -6,7 +6,7 @@ A Windows desktop companion with a small interaction window, explicit AI chat an
 
 ## Dependency security status
 
-The local 2026-11-02 dependency repair removes audited critical/high findings with compatible updates. **15 moderate minimatch-chain findings remain** in build tooling; no blanket major override was used. Read the [audit evidence and testing conditions](docs/security/2026-11-02-dependencies.md) before testing or packaging. The cloud browser/build checks do not verify Windows native integration or a downloaded Electron runtime.
+The 2026-11-02 packaging migration removes the remaining vulnerable dependency chain: the full npm audit reports **zero findings**, without exclusions or overrides. See the [final audit, packaging changes and validation limits](docs/security/2026-11-02-packaging-migration.md). This is not a guarantee against unknown vulnerabilities; Windows installation acceptance remains separate.
 
 ## Run on Windows
 
@@ -14,10 +14,12 @@ Use Windows 10/11 x64 and Node.js 22.12+ (Node 24 LTS recommended), with npm. Fr
 
 ```powershell
 npm ci
+npm run runtime:install
+.\node_modules\.bin\electron.cmd --version # expected v44.10.1
 npm run dev
 ```
 
-The development command compiles the Electron main/preload processes, starts Vite on `127.0.0.1:5173`, then launches Electron. Renderer edits update live; restart the command after main/preload edits. The Electron download comes from its official GitHub releases. If the Electron runtime was not downloaded by installation, run `node node_modules/electron/install.js` after installation. Do not disable application sandboxing on Windows.
+The development command compiles the Electron main/preload processes, starts Vite on `127.0.0.1:5173`, then launches Electron. Renderer edits update live; restart the command after main/preload edits. The Electron download comes from its official GitHub releases. The npm package does not automatically install the runtime in this version; `npm run runtime:install` does that explicitly. If your environment requires a configured HTTP(S) proxy, set `$env:ELECTRON_GET_USE_PROXY = 'true'` before the download; do not disable TLS or checksum checks. Do not disable application sandboxing on Windows.
 
 Run the production build locally:
 
@@ -26,13 +28,15 @@ npm run build
 npm start
 ```
 
-Create a local, unsigned Windows NSIS installer (not a publish operation):
+Create a local, unsigned Windows x64 NSIS installer. Install [NSIS 3](https://nsis.sourceforge.io/Download) separately, then put `makensis.exe` on PATH or set `SWIRE_MAKENSIS` to its full executable path (for example `C:\Program Files (x86)\NSIS\makensis.exe`). This command downloads the matching official Electron archive with checksum verification; it never publishes:
 
 ```powershell
 npm run dist:win
 ```
 
-Installer output is under `release/`. This packaging configuration has **not** been validated on Windows. Code signing, auto-update, startup registration and distribution are not included. Nothing in these commands pushes or publishes the repository; packaging explicitly uses `--publish never`.
+Each build creates a fresh `release/win-*/` folder containing `Swire-0.1.0-Setup.exe`, the unpacked `Swire-win32-x64/` app and a relative-path manifest. To produce only the unpacked app, use `npm run pack:win` (no NSIS required). Downloads may use `SWIRE_ELECTRON_CACHE` as an optional cache directory.
+
+The installer targets the current user and a new or empty directory. **Uninstall an older version first**, including any earlier electron-builder build; saved AppData is retained. Uninstall deletes only shipped files, preserving user-added files. Close Swire before uninstalling; locked files require retry. NSIS compilation has been validated on Linux against a real Windows payload; Windows installation/launch/uninstall checks are still required. Code signing, auto-update, startup registration and publication are not included. The executable retains Electron's stock icon/PE metadata. No command publishes or deploys anything.
 
 For UI development without Electron, `npm run dev:web` opens a browser preview at http://127.0.0.1:5173. Browser preview data uses a separate localStorage database; it is not synchronized to desktop data. Native features are visibly disabled.
 
@@ -97,6 +101,7 @@ Local data is not encrypted. References can expose paths and captures can contai
 ## Architecture
 
 - `src/Assistant.tsx`: companion window controls, drop collection, editable previews, confirmation/undo and AI chat UI.
+- `scripts/package-windows.mjs`, `packaging/windows.nsi`: verified runtime download, explicit runtime staging and per-user installer with precise uninstall manifest; replaces electron-builder.
 - `electron/provider.ts`: main-process provider configuration, bounded HTTP response parsing and generic failure messages.
 - `src/main.tsx`, `src/style.css`: React UI and original visual system. Native dialogs trap focus, support Escape and preserve drafts after save failures.
 - `src/model.ts`: Zod schemas, limits, immutable state transitions and the narrow bridge contract. State uses format version 1; unknown versions fail closed instead of being overwritten.
@@ -138,6 +143,6 @@ The 2026-11-02 local delivery review passed **11 unit tests and 8 Chromium brows
 4. Toggle always-on-top and restart. Verify focus, minimize/restore, resizing at 100%, 125%, 150% and 200% scaling, keyboard traversal, Escape and the native titlebar. Launch twice and confirm the original window is focused.
 5. Exercise a read-only/full storage location and corrupted state. Verify clear errors, preserved drafts and backup recovery, without resetting existing data.
 6. In the companion, switch to the small window and back, minimize/restore from the taskbar, and test always-on-top with mixed-DPI displays. Drop actual files (including non-ASCII names) and links; confirm metadata grouping, duplicate suppression, cancellation and undo. Configure an explicitly selected local/test provider, verify the displayed destination, send synthetic text, cancel, and exercise offline/timeout errors. Inspect that credentials never appear in renderer state or logs. These native paths have not been executed in the Linux browser run.
-7. Build/install the NSIS output as a standard user, launch it offline, verify desktop IPC and capture again, and test upgrade/uninstall behavior. No Windows installer has been built or executed in the cloud run.
+7. Build/install the NSIS output as a standard user, launch it offline, verify desktop IPC and capture again, and test upgrade/uninstall behavior. An installer has been compiled on Linux; it has not been executed on Windows. Test new/empty/nonempty directories, linked-directory rejection, locked files during uninstall, and retention of user-added files and AppData.
 
 Linux/browser checks cannot establish Windows capture, always-on-top, installer, display scaling or native integration correctness.

@@ -12,11 +12,13 @@
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && vite build && tsc -p tsconfig.electron.json",
     "start": "electron .",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --test tests/*.test.ts tests/*.test.mjs",
     "test:ui": "playwright test",
-    "dist:win": "npm run build && electron-builder --win nsis --x64 --publish never",
+    "dist:win": "npm run build && node scripts/package-windows.mjs",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "pack:win": "npm run build && node scripts/package-windows.mjs --unpacked",
+    "runtime:install": "node node_modules/electron/install.js"
   },
   "repository": {
     "type": "git",
@@ -31,25 +33,6 @@
   },
   "homepage": "https://github.com/Zehsong/swire-desktop-assistant#readme",
   "private": true,
-  "build": {
-    "appId": "com.swire.companion",
-    "productName": "Swire",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "dist/**/*",
-      "dist-electron/**/*",
-      "package.json"
-    ],
-    "win": {
-      "target": "nsis"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    }
-  },
   "dependencies": {
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -64,12 +47,13 @@
     "concurrently": "^10.0.6",
     "cross-env": "^10.1.0",
     "electron": "^44.10.1",
-    "electron-builder": "^26.15.3",
     "prettier": "^3.9.9",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.3",
-    "wait-on": "^9.5.1"
+    "wait-on": "^9.5.1",
+    "@electron/get": "^5.1.0",
+    "@electron-internal/extract-zip": "^1.0.1"
   },
   "engines": {
     "node": ">=22.12.0"
