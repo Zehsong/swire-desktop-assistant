@@ -22,6 +22,19 @@ const update = async (action: Action) => {
 };
 export const api: CompanionAPI = window.swire ?? {
   desktop: false,
+  collect: (id, projectId, references) =>
+    update({ type: 'collect', id, projectId, references }),
+  uncollect: (id) => update({ type: 'uncollect', id }),
+  fileReference: (file) => ({
+    label: file.name,
+    value: `browser-file:${file.name}:${file.size}:${file.lastModified}`,
+  }),
+  windowMode: async () => {},
+  provider: async () => ({ configured: false }),
+  chat: async () => {
+    throw new Error('AI 未配置：请在桌面应用中配置 provider。');
+  },
+  cancelChat: async () => {},
   load: async () => load(),
   project: (name) => update({ type: 'project', name }),
   checkpoint: (input) => update({ type: 'checkpoint', input }),

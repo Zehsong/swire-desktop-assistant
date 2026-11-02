@@ -1,5 +1,14 @@
 # Changelog
 
+## Phase 1 companion — 2026-11-02
+
+- Added a collapsible assistant entry and native small-window/minimize/workbench controls; retained the existing workbench and original placeholder emblem.
+- Added file/link collection, editable local-rule grouping previews, explicit confirmation, per-project deduplication and metadata-only batch undo. Legacy v1 state defaults missing collections without losing existing data.
+- Added a main-process configurable, non-streaming OpenAI-compatible adapter with environment-only credentials, explicit text sending, cancellation, timeout, response limits and sanitized errors. No real provider was called.
+- Added truthful busy/confirmation states, quiet guidance and explicit browser/native limitations. AI conversation is ephemeral and separate from persistent notes.
+- Validated on Linux: 10 unit tests and 7 Chromium browser tests, including original workflows; inspected the narrow companion screenshot. Windows native behavior and installer remain unverified.
+- Cleanup, performance diagnosis, synchronization, official character artwork and autonomous actions are not included.
+
 ## 0.1.0 — 2026-10-07
 
 - Established an Electron, React and TypeScript Windows-targeted application from an empty checkout.

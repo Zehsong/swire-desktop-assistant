@@ -49,6 +49,19 @@ export const stateSchema = z.object({
   activity: z
     .array(z.object({ id, text: z.string(), createdAt: date }))
     .max(500),
+  collections: z
+    .array(
+      z.object({
+        id,
+        projectId: id,
+        createdAt: date,
+        references: z
+          .array(referenceSchema.extend({ group: z.string().min(1).max(80) }))
+          .max(30),
+      }),
+    )
+    .max(2000)
+    .default([]),
   settings: settingsSchema,
 });
 export type State = z.infer<typeof stateSchema>;
@@ -56,6 +69,13 @@ export type CheckpointInput = z.infer<typeof checkpointInput>;
 export type Settings = State['settings'];
 export type Reference = z.infer<typeof referenceSchema>;
 export type Action =
+  | {
+      type: 'collect';
+      id: string;
+      projectId: string;
+      references: GroupedReference[];
+    }
+  | { type: 'uncollect'; id: string }
   | { type: 'project'; name: string }
   | {
       type: 'checkpoint';
@@ -69,6 +89,7 @@ export function initialState(): State {
     version: 1,
     projects: [],
     checkpoints: [],
+    collections: [],
     messages: [],
     activity: [],
     settings: { name: 'Swire', compact: false, alwaysOnTop: false },
@@ -80,6 +101,46 @@ export function applyAction(state: State, action: Action): State {
   const uid = () => crypto.randomUUID();
   let text: string;
   switch (action.type) {
+    case 'collect': {
+      id.parse(action.id);
+      if (next.collections.some((c) => c.id === action.id)) return state;
+      if (!next.projects.some((p) => p.id === action.projectId))
+        throw new Error('Choose an existing project.');
+      const references = z
+        .array(
+          referenceSchema.extend({ group: z.string().trim().min(1).max(80) }),
+        )
+        .min(1)
+        .max(30)
+        .parse(action.references);
+      const existing = new Set(
+        next.collections
+          .filter((c) => c.projectId === action.projectId)
+          .flatMap((c) => c.references.map((r) => referenceKey(r.value))),
+      );
+      const unique = references.filter((r) => {
+        const key = referenceKey(r.value);
+        if (existing.has(key)) return false;
+        existing.add(key);
+        return true;
+      });
+      if (!unique.length) return state;
+      next.collections.push({
+        id: action.id,
+        projectId: action.projectId,
+        references: unique,
+        createdAt,
+      });
+      text = `References grouped: ${unique.length}`;
+      break;
+    }
+    case 'uncollect': {
+      id.parse(action.id);
+      if (!next.collections.some((c) => c.id === action.id)) return state;
+      next.collections = next.collections.filter((c) => c.id !== action.id);
+      text = 'Reference grouping undone';
+      break;
+    }
     case 'project': {
       const name = z.string().trim().min(1).max(80).parse(action.name);
       next.projects.push({ id: uid(), name, createdAt });
@@ -118,6 +179,17 @@ export function applyAction(state: State, action: Action): State {
 export type CapturePreview = { token: string; name: string; image: string };
 export interface CompanionAPI {
   desktop: boolean;
+  collect(
+    id: string,
+    projectId: string,
+    references: GroupedReference[],
+  ): Promise<State>;
+  uncollect(id: string): Promise<State>;
+  fileReference(file: File): Reference;
+  windowMode(mode: 'companion' | 'workspace' | 'hide'): Promise<void>;
+  provider(): Promise<ProviderStatus>;
+  chat(id: string, text: string): Promise<string>;
+  cancelChat(id: string): Promise<void>;
   load(): Promise<State>;
   project(name: string): Promise<State>;
   checkpoint(input: CheckpointInput, token?: string): Promise<State>;
@@ -128,3 +200,39 @@ export interface CompanionAPI {
   cancelCapture(): Promise<void>;
   readCapture(filename: string): Promise<string>;
 }
+
+export type GroupedReference = Reference & { group: string };
+export function referenceKey(value: string): string {
+  const trimmed = value.trim();
+  if (/^[a-z]:[\\/]/i.test(trimmed))
+    return trimmed.replaceAll('\\', '/').toLowerCase();
+  if (/^https?:\/\//i.test(trimmed)) return new URL(trimmed).href;
+  return trimmed;
+}
+export function suggestGroups(references: Reference[]): GroupedReference[] {
+  const seen = new Set<string>();
+  return references
+    .map((r) => referenceSchema.parse(r))
+    .filter((r) => {
+      const key = referenceKey(r.value);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 30)
+    .map((r) => ({
+      ...r,
+      group: /^https?:/i.test(r.value)
+        ? '链接'
+        : /\.(png|jpg|jpeg|gif|webp)$/i.test(r.label)
+          ? '图片'
+          : /\.(pdf|docx?|txt|md)$/i.test(r.label)
+            ? '文档'
+            : '其他文件',
+    }));
+}
+export type ProviderStatus = {
+  configured: boolean;
+  endpoint?: string;
+  model?: string;
+};

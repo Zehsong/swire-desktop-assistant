@@ -991,3 +991,87 @@ dialog::backdrop {
     padding: 40px 10px;
   }
 }
+
+/* Companion is mounted independently so workspace navigation preserves drafts. */
+.assistant {
+  position: fixed;
+  right: 24px;
+  bottom: 20px;
+  z-index: 20;
+}
+.assistant-launch {
+  box-shadow: 0 8px 32px #0008;
+}
+.assistant-panel {
+  width: 410px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 50px);
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-shadow: 0 16px 60px #000a;
+}
+.assistant-panel h2 {
+  margin: 8px 0;
+}
+.assistant-panel small {
+  font-size: 12px;
+  color: #d9c06b;
+}
+.assistant-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+.assistant-scroll {
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 6px;
+}
+.assistant-panel p,
+.assistant-panel label {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.assistant-panel form button {
+  margin: 4px 6px 4px 0;
+}
+.collection-list {
+  list-style: none;
+  padding: 0;
+}
+.collection-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+.collection-list span {
+  overflow-wrap: anywhere;
+}
+.collection-preview {
+  border: 1px solid #55513a;
+  padding: 12px;
+  margin: 12px 0;
+}
+.assistant-focus {
+  display: block;
+  min-width: 0;
+}
+.assistant-focus > .sidebar,
+.assistant-focus > .shell {
+  display: none;
+}
+.assistant.focused {
+  position: static;
+  padding: 12px;
+}
+.assistant.focused .assistant-panel {
+  width: 100%;
+  max-width: none;
+  height: calc(100vh - 24px);
+  max-height: none;
+  box-shadow: none;
+}

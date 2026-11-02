@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { api } from './api';
 import type { CapturePreview, Reference, State } from './model';
 import './style.css';
+import { Assistant } from './Assistant';
 const time = (date: string) =>
   new Date(date).toLocaleString([], {
     month: 'short',
@@ -12,6 +13,7 @@ const time = (date: string) =>
   });
 type Page = 'Workspace' | 'Timeline' | 'Activity' | 'Settings';
 function App() {
+  const [assistantFocus, setAssistantFocus] = useState(false);
   const [data, setData] = useState<State>();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -118,7 +120,15 @@ function App() {
       </main>
     );
   return (
-    <div className={`app ${data.settings.compact ? 'compact' : ''}`}>
+    <div
+      className={`app ${data.settings.compact ? 'compact' : ''} ${assistantFocus ? 'assistant-focus' : ''}`}
+    >
+      <Assistant
+        data={data}
+        onData={setData}
+        focused={assistantFocus}
+        onFocus={setAssistantFocus}
+      />
       <aside className="sidebar">
         <div className="brand">
           <span className="brand-mark">S/</span>
@@ -186,7 +196,7 @@ function App() {
           <span>
             PERSONAL OPERATIONS <i>/</i> {page.toUpperCase()}
           </span>
-          <span className="local-badge">● OFFLINE BY DESIGN</span>
+          <span className="local-badge">● LOCAL FIRST</span>
         </header>
         {!api.desktop && (
           <div className="preview-banner">
@@ -271,7 +281,7 @@ function App() {
                   </p>
                   <div className="connection">
                     <span className="status-dot" />
-                    AI provider not connected
+                    AI chat available in the assistant entry
                   </div>
                   <p className="fine">
                     Original placeholder emblem. No game artwork.
@@ -287,9 +297,9 @@ function App() {
                   <div className="system-note">
                     <span className="eyebrow">CHANNEL STATUS</span>
                     <p>
-                      No AI provider is configured. You can leave yourself a
-                      note here; it stays on this device and receives no AI
-                      reply.
+                      This is your local notebook. Notes stay on this device and
+                      receive no AI reply. Open the assistant entry for
+                      configured AI chat.
                     </p>
                   </div>
                   {!data.messages.length && (
@@ -535,11 +545,13 @@ function App() {
                   files are not read or uploaded. Screen capture happens only
                   after you request it and is saved only with a checkpoint.
                 </p>
-                <h3>AI connection / unavailable in v0.1</h3>
+                <h3>AI connection / 桌面主进程配置</h3>
                 <p>
-                  No provider, API key or network chat is configured. The
-                  companion channel is a personal notebook. Provider setup and
-                  explicit sending consent are future work.
+                  旧频道仍为本地笔记。新助手入口提供 AI
+                  对话。启动桌面应用前，设置 SWIRE_AI_ENDPOINT（完整
+                  chat/completions URL）、SWIRE_AI_MODEL 和可选 SWIRE_AI_KEY
+                  环境变量，然后重启。只接受 HTTPS 或本机
+                  HTTP。密钥只由主进程使用，不存入本地状态或页面；不要将密钥写进仓库。发送前可在助手中核对目标地址。
                 </p>
                 <h3>Storage</h3>
                 <p>

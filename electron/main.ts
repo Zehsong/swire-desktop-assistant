@@ -12,6 +12,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { Store } from './store';
+import { providerConfig, requestReply } from './provider';
 import {
   applyAction,
   checkpointInput,
@@ -98,6 +99,71 @@ async function start() {
         throw new Error('Untrusted request');
       return work(...args);
     });
+  const requests = new Map<string, AbortController>();
+  const cancelRequests = () => {
+    requests.forEach((c) => c.abort());
+    requests.clear();
+  };
+  window.on('closed', cancelRequests);
+  window.webContents.on('did-start-navigation', cancelRequests);
+  handle('ai:status', () => {
+    const config = providerConfig(process.env);
+    return config
+      ? { configured: true, endpoint: config.endpoint, model: config.model }
+      : { configured: false };
+  });
+  handle('ai:chat', async (id, text) => {
+    z.string().uuid().parse(id);
+    z.string().trim().min(1).max(4000).parse(text);
+    if (requests.size) throw new Error('已有请求处理中。');
+    const controller = new AbortController();
+    requests.set(id, controller);
+    const timer = setTimeout(() => controller.abort(), 60000);
+    try {
+      return await requestReply(
+        providerConfig(process.env),
+        text,
+        controller.signal,
+      );
+    } finally {
+      clearTimeout(timer);
+      requests.delete(id);
+    }
+  });
+  handle('ai:cancel', (id) => {
+    z.string().uuid().parse(id);
+    requests.get(id)?.abort();
+    requests.delete(id);
+  });
+  let workspaceBounds: Electron.Rectangle | undefined;
+  let workspaceMaximized = false;
+  handle('window:mode', (raw) => {
+    const mode = z.enum(['companion', 'workspace', 'hide']).parse(raw);
+    if (mode === 'hide') {
+      window.minimize();
+      return;
+    }
+    if (mode === 'companion') {
+      if (!workspaceBounds) {
+        workspaceMaximized = window.isMaximized();
+        workspaceBounds = window.getNormalBounds();
+      }
+      if (window.isMaximized()) window.unmaximize();
+      window.setMinimumSize(360, 400);
+      window.setSize(420, 740);
+    } else {
+      window.setMinimumSize(960, 680);
+      if (workspaceBounds) window.setBounds(workspaceBounds);
+      if (workspaceMaximized) window.maximize();
+      workspaceBounds = undefined;
+    }
+  });
+  handle('collection:create', (id, projectId, references) =>
+    serialized(() => mutate({ type: 'collect', id, projectId, references })),
+  );
+  handle('collection:undo', (id) =>
+    serialized(() => mutate({ type: 'uncollect', id })),
+  );
   handle('state:load', () => serialized(() => store.load()));
   handle('project:create', (name) =>
     serialized(() => mutate({ type: 'project', name })),
