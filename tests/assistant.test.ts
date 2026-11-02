@@ -169,3 +169,87 @@ test('provider error response closes its stream before reporting failure', async
   );
   assert.equal(cancelled, true);
 });
+
+test('legacy on-disk state survives grouping, cross-project undo and restart without touching referenced files', async () => {
+  const { mkdtemp, readFile, writeFile, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { Store } = await import('../electron/store');
+  const directory = await mkdtemp(join(tmpdir(), 'swire-delivery-'));
+  try {
+    const resource = join(directory, 'synthetic-reference.txt');
+    await writeFile(resource, 'synthetic file content must remain untouched');
+    let state = applyAction(initialState(), { type: 'project', name: 'Alpha' });
+    state = applyAction(state, { type: 'project', name: 'Beta' });
+    state = applyAction(state, {
+      type: 'message',
+      text: 'legacy private note',
+    });
+    state = applyAction(state, {
+      type: 'checkpoint',
+      input: {
+        projectId: state.projects[0].id,
+        title: 'Legacy checkpoint',
+        notes: 'Keep this context',
+        references: [{ label: 'Synthetic resource', value: resource }],
+      },
+    });
+    state = applyAction(state, {
+      type: 'settings',
+      settings: { name: '施怀雅', compact: true, alwaysOnTop: true },
+    });
+    const { collections: _unused, ...legacy } = state;
+    await writeFile(join(directory, 'state.json'), JSON.stringify(legacy));
+    const store = new Store(directory);
+    const loaded = await store.load();
+    const references = suggestGroups([
+      { label: 'synthetic-reference.txt', value: resource },
+    ]);
+    const batchA = crypto.randomUUID();
+    const batchB = crypto.randomUUID();
+    let grouped = applyAction(loaded, {
+      type: 'collect',
+      id: batchA,
+      projectId: loaded.projects[0].id,
+      references,
+    });
+    grouped = applyAction(grouped, {
+      type: 'collect',
+      id: batchB,
+      projectId: loaded.projects[1].id,
+      references,
+    });
+    await store.save(grouped);
+    assert.deepEqual(
+      JSON.parse(await readFile(join(directory, 'state.json.bak'), 'utf8')),
+      legacy,
+    );
+    const restarted = await new Store(directory).load();
+    await store.save(applyAction(restarted, { type: 'uncollect', id: batchA }));
+    const final = await new Store(directory).load();
+    assert.equal(final.collections.length, 1);
+    assert.equal(final.collections[0].id, batchB);
+    assert.equal(final.collections[0].projectId, loaded.projects[1].id);
+    assert.deepEqual(final.projects, legacy.projects);
+    assert.deepEqual(final.checkpoints, legacy.checkpoints);
+    assert.deepEqual(final.messages, legacy.messages);
+    assert.deepEqual(final.settings, legacy.settings);
+    assert.deepEqual(
+      final.activity.slice(-legacy.activity.length),
+      legacy.activity,
+    );
+    assert.equal(
+      await readFile(resource, 'utf8'),
+      'synthetic file content must remain untouched',
+    );
+    const unsupported = JSON.stringify({ ...final, version: 2 });
+    await writeFile(join(directory, 'state.json'), unsupported);
+    await assert.rejects(store.load(), /not been overwritten/);
+    assert.equal(
+      await readFile(join(directory, 'state.json'), 'utf8'),
+      unsupported,
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

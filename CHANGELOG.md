@@ -1,5 +1,12 @@
 # Changelog
 
+## Local delivery review — 2026-11-02
+
+- Reviewed the AI input/IPC/request boundary and main-process-only credential handling; found no new in-scope production defects.
+- Added an on-disk legacy-state regression covering grouping, cross-project undo, restart, backup, unchanged referenced-file contents and unsupported-version rejection.
+- Added a simulated renderer/bridge regression proving explicit AI input excludes saved paths/notes and dropped-file contents, with no file reads or chat persistence.
+- Validation: 11 unit tests, 8 Chromium browser tests, formatting, renderer/main-process TypeScript and production build passed locally. No real provider requests, secret inspection, uploads, pushes, PRs or deployments were performed. Windows native validation remains outstanding.
+
 ## Phase 1 companion — 2026-11-02
 
 - Added a collapsible assistant entry and native small-window/minimize/workbench controls; retained the existing workbench and original placeholder emblem.

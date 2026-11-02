@@ -124,6 +124,8 @@ CHROMIUM_PATH=/usr/bin/chromium npm run test:ui
 
 The optional `CHROMIUM_PATH` test override uses `--no-sandbox` for restricted CI browsers only. It never changes the desktop application's sandbox configuration. Screenshots are generated under ignored `test-results/`.
 
+The 2026-11-02 local delivery review passed **11 unit tests and 8 Chromium browser tests**, formatting and the production build. Additional tests verify legacy on-disk backup/reload, cross-project undo without changing referenced files, and explicit AI text isolation from saved notes, paths and dropped-file contents using a simulated bridge. This is not a Windows native or real-provider test.
+
 ### Windows acceptance checklist — still required
 
 1. Run the production app with `npm run build` and `npm start`. Confirm it identifies as desktop, not browser preview; create projects, local notes and checkpoints, restart and verify persistence.

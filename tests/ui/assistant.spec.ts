@@ -168,3 +168,96 @@ test('invalid long file drop reports an error without losing the existing draft'
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('simulated AI bridge receives only explicit input, excluding collected files and saved context', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const projectId = 'b159ea66-c6be-4e7b-941b-c7d28f2b1efb';
+    const createdAt = new Date().toISOString();
+    (window as any).__sentArgs = [];
+    (window as any).__fileReads = 0;
+    File.prototype.text = async () => {
+      (window as any).__fileReads++;
+      throw new Error('File content must not be read');
+    };
+    File.prototype.arrayBuffer = async () => {
+      (window as any).__fileReads++;
+      throw new Error('File content must not be read');
+    };
+    (window as any).swire = {
+      desktop: true,
+      load: async () => ({
+        version: 1,
+        projects: [
+          { id: projectId, name: 'Synthetic private project', createdAt },
+        ],
+        checkpoints: [],
+        messages: [
+          {
+            id: 'f13bf626-313b-4ab7-8bfc-d31d18d88198',
+            text: 'SAVED_NOTE_SENTINEL',
+            createdAt,
+          },
+        ],
+        collections: [
+          {
+            id: 'eb4b7649-7858-4977-ade4-9c3b1c56a5fb',
+            projectId,
+            createdAt,
+            references: [
+              {
+                label: 'Saved file',
+                value: 'C:\\private\\SAVED_PATH_SENTINEL.pdf',
+                group: '文档',
+              },
+            ],
+          },
+        ],
+        activity: [],
+        settings: { name: 'Swire', compact: false, alwaysOnTop: false },
+      }),
+      provider: async () => ({
+        configured: true,
+        model: 'mock',
+        endpoint: 'https://example.invalid',
+      }),
+      fileReference: (file: File) => ({
+        label: file.name,
+        value: 'C:\\private\\DROP_PATH_SENTINEL.txt',
+      }),
+      chat: async (...args: unknown[]) => {
+        (window as any).__sentArgs.push(args);
+        return 'Synthetic mock reply';
+      },
+      cancelChat: async () => {},
+    };
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'S/ 施怀雅' }).click();
+  const dt = await page.evaluateHandle(() => {
+    const d = new DataTransfer();
+    d.items.add(
+      new File(['FILE_CONTENT_SENTINEL'], 'Synthetic dropped file.txt'),
+    );
+    return d;
+  });
+  await page
+    .getByRole('region', { name: '施怀雅助手', exact: true })
+    .dispatchEvent('drop', { dataTransfer: dt });
+  await page
+    .getByLabel('发给 AI 的文字')
+    .fill('Only this explicitly submitted sentence.');
+  await page.getByRole('button', { name: '发送给 AI' }).click();
+  await expect(
+    page.getByText('Synthetic mock reply', { exact: true }),
+  ).toBeVisible();
+  const args = await page.evaluate(() => (window as any).__sentArgs);
+  expect(args).toHaveLength(1);
+  expect(args[0]).toEqual([
+    expect.stringMatching(/^[a-f0-9-]{36}$/),
+    'Only this explicitly submitted sentence.',
+  ]);
+  expect(await page.evaluate(() => (window as any).__fileReads)).toBe(0);
+  expect(await page.evaluate(() => localStorage.length)).toBe(0);
+});
