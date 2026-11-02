@@ -4,6 +4,10 @@ A Windows desktop companion with a small interaction window, explicit AI chat an
 
 ![Browser preview with synthetic test data](docs/workspace-preview.png)
 
+## Dependency security status
+
+The local 2026-11-02 dependency repair removes audited critical/high findings with compatible updates. **15 moderate minimatch-chain findings remain** in build tooling; no blanket major override was used. Read the [audit evidence and testing conditions](docs/security/2026-11-02-dependencies.md) before testing or packaging. The cloud browser/build checks do not verify Windows native integration or a downloaded Electron runtime.
+
 ## Run on Windows
 
 Use Windows 10/11 x64 and Node.js 22.12+ (Node 24 LTS recommended), with npm. From the repository in PowerShell:
@@ -13,7 +17,7 @@ npm ci
 npm run dev
 ```
 
-The development command compiles the Electron main/preload processes, starts Vite on `127.0.0.1:5173`, then launches Electron. Renderer edits update live; restart the command after main/preload edits. The Electron download comes from its official GitHub releases. If your npm configuration suppresses dependency install scripts, run `node node_modules/electron/install.js` after installation. Do not disable application sandboxing on Windows.
+The development command compiles the Electron main/preload processes, starts Vite on `127.0.0.1:5173`, then launches Electron. Renderer edits update live; restart the command after main/preload edits. The Electron download comes from its official GitHub releases. If the Electron runtime was not downloaded by installation, run `node node_modules/electron/install.js` after installation. Do not disable application sandboxing on Windows.
 
 Run the production build locally:
 

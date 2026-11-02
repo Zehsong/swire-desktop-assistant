@@ -88,3 +88,19 @@ test('store persists, keeps a previous backup and refuses to overwrite corrupted
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('oversized reference arrays fail before per-element validation', async () => {
+  const { checkpointInput } = await import('../src/model');
+  const result = checkpointInput.safeParse({
+    projectId: crypto.randomUUID(),
+    title: 'Bounded validation',
+    notes: '',
+    references: Array.from({ length: 31 }, () => ({ label: 0, value: null })),
+  });
+  assert.equal(result.success, false);
+  if (!result.success) {
+    assert.equal(result.error.issues.length, 1);
+    assert.equal(result.error.issues[0].code, 'too_big');
+    assert.deepEqual(result.error.issues[0].path, ['references']);
+  }
+});

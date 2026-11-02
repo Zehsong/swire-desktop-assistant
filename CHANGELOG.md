@@ -1,5 +1,12 @@
 # Changelog
 
+## Dependency security repair — 2026-11-02
+
+- Updated Electron within major 44 to 44.10.1, concurrently to 10.0.6 (shell-quote 1.12.0), and Zod to 4.6.7. Applied compatible lockfile patches for undici 6/7, joi, follow-redirects and fast-uri.
+- Cloud audit changed from 2 critical / 7 high / 20 moderate to 0 critical / 0 high / 15 moderate. Remaining minimatch propagation has no compatible same-major patch; no force fix or breaking override was applied.
+- Added bounded-array validation regression; clean install, format, types/build, 12 unit and 8 browser tests passed. Electron binary download failed in cloud; native tests remain outstanding.
+- See [dependency review](docs/security/2026-11-02-dependencies.md) and raw audit snapshots for attribution, compatibility, residual risk and local testing conditions. This repair is local only pending separate publication authorization.
+
 ## Local delivery review — 2026-11-02
 
 - Reviewed the AI input/IPC/request boundary and main-process-only credential handling; found no new in-scope production defects.
